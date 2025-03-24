@@ -11,9 +11,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -39,4 +41,34 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Wrapper to center the progress bar */
+.progress-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Full height */
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Progress Bar Container */
+.progress-container {
+  width: 50%;
+  background-color: #444;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid white;
+  height: 20px;
+}
+
+/* Progress Bar Fill */
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background-color: #28a745; /* Green */
+  transition: width 0.5s ease-in-out;
 }
