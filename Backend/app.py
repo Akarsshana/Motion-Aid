@@ -14,7 +14,7 @@ mp_drawing = mp.solutions.drawing_utils  # Utility for drawing hand landmarks
 mp_hands = mp.solutions.hands  # Hand tracking module
 
 # Open webcam for video capture
-cap = cv2.VideoCapture(0)  
+cap = cv2.VideoCapture(0)  # Capture video from default camera
 hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)  # Initialize hand tracking model
 
 # Variables to track hand states and count hand open-close cycles
@@ -92,4 +92,4 @@ def start_video():
 
 # Run the Flask app with WebSocket support
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)  # Start the server on port 5000
