@@ -1,75 +1,98 @@
 import { useState, useEffect } from "react"; // React hooks for managing state and side effects
 import io from "socket.io-client"; // Import socket.io for real-time communication
+import soundOn from "./assets/sound-on.png";
+import soundOff from "./assets/sound-off.png";
+import musicon from "./assets/music-on.png";
+import musicoff from "./assets/music-off.png";
 
-// Initialize socket connection to backend
+
+
+
 const socket = io("http://localhost:5000");
 
 function App() {
-  // State variables
-  const [videoFrame, setVideoFrame] = useState(null); // Stores the video frame data
-  const [openCloseCount, setOpenCloseCount] = useState(0); // Tracks the number of hand movements
-  const [streaming, setStreaming] = useState(false); // Indicates whether video streaming is active
-  const [paused, setPaused] = useState(false); // Indicates if video stream is paused
-  const [sessionCompleted, setSessionCompleted] = useState(false); // Tracks if session is completed
-  const [countdown, setCountdown] = useState(30); // Timer for rest period (30 seconds)
-  const [resting, setResting] = useState(false); // Indicates whether the user is in the resting period
+  const [videoFrame, setVideoFrame] = useState(null);
+  const [openCloseCount, setOpenCloseCount] = useState(0);
+  const [streaming, setStreaming] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const [resting, setResting] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false); // For sound toggle
+  const [isPlayingMusic, setisPlayingMusic] = useState(false);
+
+  const audio = new Audio("/sounds/environment.mp3"); // Replace with your actual sound file
+  const BGmusic = new Audio("/sounds/background-music.mp3");
+  BGmusic.loop = true;
+
 
   useEffect(() => {
-    // Listen for incoming video frames from the backend
     socket.on("video_feed", (data) => {
       if (!sessionCompleted && !paused) {
-        setVideoFrame(`data:image/jpeg;base64,${data.frame}`); // Update video frame
-        setOpenCloseCount(data.count); // Update hand movement count
+        setVideoFrame(`data:image/jpeg;base64,${data.frame}`);
+        setOpenCloseCount(data.count);
       }
     });
 
-    // Cleanup function to remove event listener
     return () => {
       socket.off("video_feed");
     };
-  }, [sessionCompleted, paused]); // Re-run effect when sessionCompleted or paused changes
+  }, [sessionCompleted, paused]);
 
   useEffect(() => {
-    // If hand movement count reaches 15, complete the session and start rest period
     if (openCloseCount >= 15) {
       setSessionCompleted(true);
       setStreaming(false);
-      setResting(true); // Enable resting mode
+      setResting(true);
     }
-  }, [openCloseCount]); // Re-run effect when openCloseCount changes
+  }, [openCloseCount]);
 
   useEffect(() => {
     let timer;
     if (resting && countdown > 0) {
-      // Start countdown timer when resting period is active
       timer = setInterval(() => {
-        setCountdown((prev) => prev - 1); // Decrease countdown every second
+        setCountdown((prev) => prev - 1);
       }, 1000);
     } else if (countdown === 0) {
-      // End resting period when countdown reaches 0
       setResting(false);
-      setCountdown(30); // Reset countdown for next session
+      setCountdown(30);
     }
-    return () => clearInterval(timer); // Cleanup interval on unmount or countdown change
-  }, [resting, countdown]); // Re-run effect when resting or countdown changes
+    return () => clearInterval(timer);
+  }, [resting, countdown]);
 
-  // Function to start video feed
   const startVideoFeed = () => {
-    setOpenCloseCount(0); // Reset hand movement count
-    setSessionCompleted(false); // Reset session status
-    setResting(false); // Ensure resting is disabled
-    setCountdown(30); // Reset countdown timer
-    socket.emit("start_video"); // Send event to backend to start video processing
-    setStreaming(true); // Enable streaming mode
-    setPaused(false); // Ensure video is not paused
+    setOpenCloseCount(0);
+    setSessionCompleted(false);
+    setResting(false);
+    setCountdown(30);
+    socket.emit("start_video");
+    setStreaming(true);
+    setPaused(false);
   };
 
-  // Toggle Pause & Play for the video stream
   const togglePausePlay = () => {
     setPaused((prev) => !prev);
   };
 
-  // Calculate progress percentage for progress bar
+  const toggleSound = () => {
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const toggleMusic = () => {
+    if (isPlayingMusic) {
+      BGmusic.pause();
+    } else {
+      BGmusic.play();
+    }
+    setisPlayingMusic(!isPlayingMusic);
+  };
+
+
   const progress = (openCloseCount / 15) * 100;
 
   return (
@@ -81,18 +104,15 @@ function App() {
       height: "0vh" 
     }}>
     
-      {/* Heading */}
-      <h1 style={{ fontSize: "28px", fontWeight: "bold", color: "#F4C2C2", marginBottom: "10px" }}>
+      <h1 style={{ fontSize: "28px", fontWeight: "bold", color: "#F4C2C2", marginTop: "-400px" }}>
         Hand Exercise - Open & Close
       </h1>
 
-      {/* Description */}
-      <p style={{ fontSize: "18px", color: "#ddd", marginBottom: "20px", maxWidth: "600px", margin: "auto", marginBottom: "10px" }}>
+      <p style={{ fontSize: "18px", color: "#ddd", marginBottom: "20px", maxWidth: "600px", margin: "auto" }}>
         This exercise helps in improving hand mobility. Open and close your hand 
         15 times to complete the session. Track your progress in real-time below.
       </p>
 
-      {/* Show Start Button only if not streaming & not resting */}
       {!streaming && !resting && (
         <button 
           onClick={startVideoFeed} 
@@ -103,25 +123,23 @@ function App() {
             background: "#F4C2C2", 
             color: "white", 
             border: "none", 
-            borderRadius: "5px" 
+            borderRadius: "5px",
+            marginTop: "300px"
           }}
         >
           Start exercise
         </button>
       )}
 
-      {/* Resting Period UI */}
       {resting && (
         <div style={{ fontSize: "24px", fontWeight: "bold", color: "#FFA500", marginTop: "20px" }}>
           🏖️ Take Rest: {countdown} sec 🏖️
           <div style={{ marginTop: "10px" }}>
-            {/* Button to reduce countdown by 5 seconds */}
             <button 
               onClick={() => setCountdown((prev) => (prev > 5 ? prev - 5 : prev))} 
               style={{ margin: "5px", padding: "10px", background: "#ff4d4d", color: "white", border: "none", borderRadius: "5px" }}>
               ⏪ -5 sec
             </button>
-            {/* Button to increase countdown by 5 seconds */}
             <button 
               onClick={() => setCountdown((prev) => prev + 5)} 
               style={{ margin: "5px", padding: "10px", background: "#4da6ff", color: "white", border: "none", borderRadius: "5px" }}>
@@ -131,10 +149,8 @@ function App() {
         </div>
       )}
 
-      {/* Streaming UI */}
       {streaming && (
         <>
-          {/* Progress Bar */}
           <div style={{ width: "50%", background: "#555", height: "20px", borderRadius: "10px", margin: "20px auto" }}>
             <div 
               style={{ 
@@ -147,10 +163,8 @@ function App() {
             />
           </div>
 
-          {/* Hand Movement Count */}
           <p style={{ fontSize: "18px", marginTop: "10px" }}>Hand Movements: {openCloseCount} / 15</p>
 
-          {/* Video Frame (Top-Right Corner) */}
           {videoFrame && (
             <img 
               src={videoFrame} 
@@ -167,24 +181,72 @@ function App() {
             />
           )}
 
-          {/* Pause & Play Button */}
+          
+          <button 
+            style={{ marginRight: "220px", padding: "10px", background: "#F4C2C2", color: "white", border: "none", borderRadius: "5px", padding: "10px" }}>
+            ⏪  (+1)
+          </button>
           <button 
             onClick={togglePausePlay} 
-            style={{ margin: "10px", padding: "10px", background: "#FFD700", color: "black", border: "none", borderRadius: "5px" }}>
-            {paused ? "▶️ Play" : "⏸️ Pause"}
+            style={{ marginLeft: "-200px", padding: "10px", background: "#F4C2C2", color: "black", border: "none", borderRadius: "10px" }}>
+            {paused ? "▶️ " : "⏸️"}
           </button>
 
-          {/* Forward & Backward Buttons (For Next Exercise) */}
           <button 
-            style={{ margin: "10px", padding: "10px", background: "#32CD32", color: "white", border: "none", borderRadius: "5px" }}>
-            ⏩ Forward (+1)
-          </button>
-          <button 
-            style={{ margin: "10px", padding: "10px", background: "#FF4500", color: "white", border: "none", borderRadius: "5px" }}>
-            ⏪ Backward (-1)
+            style={{ marginLeft: "20px", padding: "10px", background: "#F4C2C2", color: "white", border: "none", borderRadius: "5px" }}>
+              ⏩(-1)
           </button>
         </>
       )}
+
+      {/* 🔊 Sound Toggle Button (Bottom-Left) */}
+      <button 
+        onClick={toggleSound} 
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "20px",
+          width: "50px",
+          height: "50px",
+          borderRadius: "50%",
+          fontSize: "20px",
+          background: isPlaying ? "#F4C2C2" : "#F4C2C2",
+          color: "white",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: "650px"
+        }}
+      >
+        <img src={isPlaying ? soundOn : soundOff} alt="Sound Icon" width="24" height="24" />
+      </button>
+
+       {/* 🔊 Music Toggle Button (Bottom-Left) */}
+       <button 
+        onClick={toggleMusic} 
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "20px",
+          width: "50px",
+          height: "50px",
+          borderRadius: "50%",
+          fontSize: "20px",
+          background: isPlayingMusic ? "#F4C2C2" : "#F4C2C2",
+          color: "white",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: "580px"
+        }}
+      >
+        <img src={isPlayingMusic ? musicon : musicoff} alt="Sound Icon" width="24" height="24" />
+      </button>
+
     </div>
   );
 }
