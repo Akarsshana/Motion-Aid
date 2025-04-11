@@ -52,12 +52,14 @@ function App() {
       timer = setInterval(() => {
         setCountdown((prev) => prev - 1);
       }, 1000);
-    } else if (countdown === 0) {
+    } else if (countdown === 0 && resting) {
       setResting(false);
       setCountdown(30);
+      navigate("/exone"); // 👈 Navigate to ExOne page here
     }
     return () => clearInterval(timer);
-  }, [resting, countdown]);
+  }, [resting, countdown, navigate]);
+  
 
   const startVideoFeed = () => {
     setOpenCloseCount(0);
